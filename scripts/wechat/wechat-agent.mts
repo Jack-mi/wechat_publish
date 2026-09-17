@@ -34,6 +34,7 @@ const usage = `Usage:
   pnpm --dir scripts/wechat wechat-agent status|resume|preview|report <run-id> [--json]
   pnpm --dir scripts/wechat wechat-agent resolve-facts <run-id> --conflict <id> --decision research_wins|retain_with_qualification|drop_claim [--note <text>]
   pnpm --dir scripts/wechat wechat-agent approve-draft <run-id>
+ pnpm --dir scripts/wechat wechat-agent verify-draft <run-id>
   pnpm --dir scripts/wechat wechat-agent update-draft <run-id> --media-id <media-id>
   pnpm --dir scripts/wechat wechat-agent export <run-id> --output <vault-path>`
 
@@ -82,9 +83,9 @@ function finalMarkdown(state: RunState) { return artifact(state, 'writingFinal',
 function unresolvedConflicts(conflicts: FactConflict[]) { return conflicts.filter(item => item.severity === 'major' && item.status === 'open') }
 function sourceRules() { return ['.agents/skills/wechat-article/references/editorial-rules.md', '.agents/skills/wechat-article/references/publishing-rules.md', '.agents/skills/wechat-article/references/conflict-resolution.md'].map(item => rel(path.join(root, item))) }
 
-const schemas = {
+export const schemas = {
   orchestrator: { type: 'object', properties: { plan: { type: 'array', items: { type: 'string' } }, tasks: { type: 'array', items: { type: 'object', properties: { agent: { type: 'string', enum: ['writer', 'visual', 'qa'] }, objective: { type: 'string' }, acceptanceCriteria: { type: 'array', items: { type: 'string' } } }, required: ['agent', 'objective', 'acceptanceCriteria'], additionalProperties: false } } }, required: ['plan', 'tasks'], additionalProperties: false },
-  writer: { type: 'object', properties: { outline: { type: 'array', items: { type: 'string' } }, article: { type: 'string' }, sources: { type: 'array', items: { type: 'object', properties: { url: { type: 'string' }, title: { type: 'string' }, retrievedAt: { type: 'string' }, summary: { type: 'string' } }, required: ['url', 'title', 'retrievedAt', 'summary'], additionalProperties: false } }, claims: { type: 'array', items: { type: 'object', properties: { id: { type: 'string' }, claim: { type: 'string' }, location: { type: 'object', properties: { artifact: { type: 'string' }, line: { type: 'number' } }, required: ['artifact'], additionalProperties: false }, importance: { type: 'string', enum: ['supporting', 'key'] }, evidence: { type: 'array', items: { type: 'object', properties: { url: { type: 'string' }, retrievedAt: { type: 'string' }, excerpt: { type: 'string' } }, required: ['url', 'retrievedAt', 'excerpt'], additionalProperties: false } } }, required: ['id', 'claim', 'location', 'importance', 'evidence'], additionalProperties: false } }, conflicts: { type: 'array', items: { type: 'object', properties: { id: { type: 'string' }, draftClaim: { type: 'string' }, location: { type: 'object', properties: { artifact: { type: 'string' }, line: { type: 'number' } }, required: ['artifact'], additionalProperties: false }, evidence: { type: 'array', items: { type: 'object', properties: { url: { type: 'string' }, retrievedAt: { type: 'string' }, excerpt: { type: 'string' } }, required: ['url', 'retrievedAt', 'excerpt'], additionalProperties: false } }, severity: { type: 'string', enum: ['minor', 'major'] }, impact: { type: 'string', enum: ['core_conclusion', 'mechanism', 'number_or_timeline', 'recommendation'] } }, required: ['id', 'draftClaim', 'location', 'evidence', 'severity', 'impact'], additionalProperties: false } } }, required: ['outline', 'article', 'sources', 'claims', 'conflicts'], additionalProperties: false },
+  writer: { type: 'object', properties: { outline: { type: 'array', items: { type: 'string' } }, article: { type: 'string' }, sources: { type: 'array', items: { type: 'object', properties: { url: { type: 'string' }, title: { type: 'string' }, retrievedAt: { type: 'string' }, summary: { type: 'string' } }, required: ['url', 'title', 'retrievedAt', 'summary'], additionalProperties: false } }, claims: { type: 'array', items: { type: 'object', properties: { id: { type: 'string' }, claim: { type: 'string' }, location: { type: 'object', properties: { artifact: { type: 'string' }, line: { type: 'number' } }, required: ['artifact', 'line'], additionalProperties: false }, importance: { type: 'string', enum: ['supporting', 'key'] }, evidence: { type: 'array', items: { type: 'object', properties: { url: { type: 'string' }, retrievedAt: { type: 'string' }, excerpt: { type: 'string' } }, required: ['url', 'retrievedAt', 'excerpt'], additionalProperties: false } } }, required: ['id', 'claim', 'location', 'importance', 'evidence'], additionalProperties: false } }, conflicts: { type: 'array', items: { type: 'object', properties: { id: { type: 'string' }, draftClaim: { type: 'string' }, location: { type: 'object', properties: { artifact: { type: 'string' }, line: { type: 'number' } }, required: ['artifact', 'line'], additionalProperties: false }, evidence: { type: 'array', items: { type: 'object', properties: { url: { type: 'string' }, retrievedAt: { type: 'string' }, excerpt: { type: 'string' } }, required: ['url', 'retrievedAt', 'excerpt'], additionalProperties: false } }, severity: { type: 'string', enum: ['minor', 'major'] }, impact: { type: 'string', enum: ['core_conclusion', 'mechanism', 'number_or_timeline', 'recommendation'] } }, required: ['id', 'draftClaim', 'location', 'evidence', 'severity', 'impact'], additionalProperties: false } } }, required: ['outline', 'article', 'sources', 'claims', 'conflicts'], additionalProperties: false },
   visual: { type: 'object', properties: { coverDecision: { type: 'string' }, diagramTitle: { type: 'string' }, diagramNodes: { type: 'array', items: { type: 'string' }, minItems: 3, maxItems: 5 }, alt: { type: 'string' }, findings: { type: 'array', items: { type: 'string' } } }, required: ['coverDecision', 'diagramTitle', 'diagramNodes', 'alt', 'findings'], additionalProperties: false },
   qa: { type: 'object', properties: { verdict: { type: 'string', enum: ['pass', 'revise', 'blocked'] }, summary: { type: 'string' }, findings: { type: 'array', items: { type: 'object', properties: { severity: { type: 'string', enum: ['info', 'warning', 'error'] }, message: { type: 'string' }, recommendation: { type: 'string' } }, required: ['severity', 'message', 'recommendation'], additionalProperties: false } } }, required: ['verdict', 'summary', 'findings'], additionalProperties: false },
 } as const
@@ -92,7 +93,7 @@ const schemas = {
 async function runAgent<T>(state: RunState, agent: AgentName, prompt: string, schema: object, web = false): Promise<T> {
   if (process.env.WECHAT_AGENT_MOCK === '1') return mockAgent(agent, state) as T
   const codex = new Codex()
-  const options = { workingDirectory: root, sandboxMode: 'read-only' as const, approvalPolicy: 'never' as const, networkAccessEnabled: web, webSearchMode: web ? 'live' as const : 'disabled' as const, additionalDirectories: [runDir(state.id), ...(vaultRoot ? [vaultRoot] : [])] }
+  const options = { workingDirectory: root, model: process.env.WECHAT_AGENT_MODEL ?? 'gpt-5.6-terra', sandboxMode: web ? 'workspace-write' as const : 'read-only' as const, approvalPolicy: 'never' as const, networkAccessEnabled: web, webSearchMode: web ? 'live' as const : 'disabled' as const, additionalDirectories: web ? [runDir(state.id)] : [runDir(state.id), ...(vaultRoot ? [vaultRoot] : [])] }
   const thread = state.threads[agent] ? codex.resumeThread(state.threads[agent]!, options) : codex.startThread(options)
   const result = await thread.run(prompt, { outputSchema: schema })
   state.threads[agent] = thread.id ?? undefined
@@ -111,14 +112,24 @@ function mockAgent(agent: AgentName, state: RunState): unknown {
 }
 
 function orchestratorPrompt(state: RunState) { return `你是公众号生产主 Agent。只能规划、派单和裁决，不能改写正文、生成生产 HTML/CSS、上传图片或调用公众号接口。\n运行 ID：${state.id}\n模式：${state.mode}\n目标：${state.goal}\n输入：${state.source ?? '主题：' + state.title}\n规则文件：${sourceRules().join('、')}\n输出一个简短可审计计划，并分别给 writer、visual、qa 任务。` }
-function writerPrompt(state: RunState, source: string, decisions: FactConflict[]) { return `你是公众号写作与事实核验 Agent。只读工作区；可以使用公开网页检索核验关键事实；不得调用发布工具或生成 HTML/CSS。\n运行 ID：${state.id}\n目标：${state.goal}\n受众：${state.audience ?? '对 AI / Agent 感兴趣的技术读者'}\n原始输入：\n${source}\n\n人工已裁决的事实冲突（必须遵守，不得重新打开）：${JSON.stringify(decisions.filter(item => item.status === 'resolved').map(item => ({ id: item.id, decision: item.decision, note: item.note })))}\n\n输出适合微信公众号的完整 Markdown 工作稿。文章开头不要自行写目录，渲染器会注入“文章目录”。使用 H2/H3。保留有证据的关键事实；对外部调研与原稿存在重大冲突时，必须写入 conflicts，不能自行选择改法。每个关键事实都应映射到 sources/claims。` }
-function visualPrompt(state: RunState, markdown: string) { return `你是微信公众号视觉 Agent。只读工作区，不改写正文、不调用公众号接口。\n文章标题：${state.title}\n工作稿：\n${markdown}\n\n判断是否复用现有封面，并给出一张必要、极简的架构图标题和 3-5 个节点。图必须适合 390px 手机阅读，避免复杂、AI 味和密集小字。` }
-function qaPrompt(state: RunState, markdown: string, deterministic: unknown) { return `你是独立公众号 QA Agent。只读，不改写文章，不操作草稿。\n工作稿：\n${markdown}\n\n确定性 QA：${JSON.stringify(deterministic)}\n检查事实可追溯、读者门槛、标题层级、目录和代码块规则、视觉资产与发布风险。错误级问题必须 verdict=blocked；需改但可继续则 revise。` }
+function writerPrompt(state: RunState, source: string, decisions: FactConflict[]) { return `你是公众号写作与事实核验 Agent。只读工作区；可以使用公开网页检索核验关键事实；不得调用发布工具或生成 HTML/CSS。\n运行 ID：${state.id}\n目标：${state.goal}\n受众：${state.audience ?? '对 AI / Agent 感兴趣的技术读者'}\n原始输入：\n${source}\n\n人工已裁决的事实冲突（必须遵守，不得重新打开）：${JSON.stringify(decisions.filter(item => item.status === 'resolved').map(item => ({ id: item.id, decision: item.decision, note: item.note })))}\n\n输出适合微信公众号的完整 Markdown 工作稿。文章开头不要自行写目录，渲染器会注入“文章目录”。使用 H2/H3。保留有证据的关键事实；对外部调研与原稿存在重大冲突时，必须写入 conflicts，不能自行选择改法。每个关键事实都应映射到 sources/claims。如果正文使用 [1][2] 这类编号引用，文末必须给出编号一一对应的「参考来源」列表，每条含可点击 URL；没有对应条目的编号标记不得出现。公众号草稿标题上限为 32 个字符，一级标题（H1）必须控制在该上限内。渲染器会在文末自动注入一张按纵向串联流程绘制的架构图，因此正文不要自绘 ASCII 结构图，也不要使用与纵向串联冲突的并列、双列或汇合式结构描述。` }
+function visualPrompt(state: RunState, markdown: string) { return `你是微信公众号视觉 Agent。只读工作区，不改写正文、不调用公众号接口。\n文章标题：${state.title}\n工作稿：\n${markdown}\n\n判断是否复用现有封面，并给出一张必要、极简的架构图标题和 3-5 个节点。图必须适合 390px 手机阅读，避免复杂、AI 味和密集小字。架构图由渲染器按这 3-5 个节点绘制成纵向串联流程：diagramNodes 必须是顺序递进的单链，alt 必须准确描述这条纵向串联链路，不得出现并列、双列或汇合描述。` }
+function qaPrompt(state: RunState, markdown: string, deterministic: unknown) { return `你是独立公众号 QA Agent。只读，不改写文章，不操作草稿。\n工作稿：\n${markdown}\n\n确定性 QA：${JSON.stringify(deterministic)}\n检查事实可追溯、读者门槛、标题层级、目录和代码块规则、视觉资产与发布风险。以下属于渲染前的正常状态，不得作为阻断或需改项：正文中的 ../assets/architecture.svg 等本地相对路径（发布阶段会替换为公众号可访问的远程地址）；由渲染器注入的“文章目录”。错误级问题必须 verdict=blocked；需改但可继续则 revise。` }
 
 function diagramSvg(title: string, nodes: string[]) {
-  const text = (value: string) => value.replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]!)
-  const width = 1600; const step = 330; const boxes = nodes.map((node, index) => { const x = 100 + index * step; const arrow = index < nodes.length - 1 ? `<path d="M${x + 245} 420H${x + step - 20}" stroke="#78c7ee" stroke-width="6" marker-end="url(#arrow)"/>` : ''; return `<g>${arrow}<rect x="${x}" y="330" width="245" height="180" rx="22" fill="#12355b" stroke="#90ddff" stroke-width="3"/><circle cx="${x + 34}" cy="370" r="11" fill="#90ddff"/><text x="${x + 28}" y="430" fill="#fff" font-size="32" font-weight="700" font-family="Arial, PingFang SC, sans-serif">${text(node)}</text></g>` }).join('')
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#071a36"/><stop offset="1" stop-color="#1b5a88"/></linearGradient><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#78c7ee"/></marker></defs><rect width="1600" height="900" fill="url(#bg)"/><text x="100" y="180" fill="#9de1ff" font-size="28" font-weight="700" letter-spacing="7" font-family="Arial, PingFang SC, sans-serif">WECHAT ARTICLE HARNESS</text><text x="100" y="255" fill="#fff" font-size="52" font-weight="700" font-family="Arial, PingFang SC, sans-serif">${text(title)}</text>${boxes}<text x="100" y="730" fill="#c8e7f8" font-size="30" font-family="Arial, PingFang SC, sans-serif">模型做判断，确定性工具守住质量和发布边界</text></svg>`
+ const text = (value: string) => value.replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]!)
+ const width = 780
+ const boxHeight = 132
+ const gap = 60
+ const top = 250
+ const height = top + nodes.length * boxHeight + Math.max(nodes.length - 1, 0) * gap + 140
+ const fit = (value: string, wide: number, narrow: number) => value.length > 10 ? narrow : wide
+ const boxes = nodes.map((node, index) => {
+  const y = top + index * (boxHeight + gap)
+  const arrow = index < nodes.length - 1 ? `<path d="M${width / 2} ${y + boxHeight}V${y + boxHeight + gap - 18}" stroke="#78c7ee" stroke-width="6" marker-end="url(#arrow)"/>` : ''
+  return `<g>${arrow}<rect x="80" y="${y}" width="${width - 160}" height="${boxHeight}" rx="20" fill="#12355b" stroke="#90ddff" stroke-width="3"/><circle cx="124" cy="${y + 44}" r="11" fill="#90ddff"/><text x="152" y="${y + 58}" fill="#fff" font-size="${fit(node, 40, 30)}" font-weight="700" font-family="Arial, PingFang SC, sans-serif">${text(node)}</text></g>`
+ }).join('')
+ return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#071a36"/><stop offset="1" stop-color="#1b5a88"/></linearGradient><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#78c7ee"/></marker></defs><rect width="${width}" height="${height}" fill="url(#bg)"/><text x="80" y="140" fill="#9de1ff" font-size="26" font-weight="700" letter-spacing="6" font-family="Arial, PingFang SC, sans-serif">WECHAT ARTICLE HARNESS</text><text x="80" y="200" fill="#fff" font-size="${fit(title, 44, 32)}" font-weight="700" font-family="Arial, PingFang SC, sans-serif">${text(title)}</text>${boxes}<text x="80" y="${height - 60}" fill="#c8e7f8" font-size="28" font-family="Arial, PingFang SC, sans-serif">模型做判断，确定性工具守住质量和发布边界</text></svg>`
 }
 
 async function createRun(mode: RunState['mode'], input: string, options: { goal: string; audience?: string; angle?: string; cover?: string }) {
@@ -206,7 +217,14 @@ async function revise(state: RunState, reason: string) {
 async function advance(state: RunState) {
   if (state.phase === 'intake') await plan(state)
   if (state.phase === 'plan') await researchAndWrite(state)
-  if (state.phase === 'awaiting_human_fact_resolution' || state.phase === 'blocked' || state.phase === 'awaiting_draft_approval' || state.phase === 'completed') return state
+ if (state.phase === 'awaiting_draft_approval' && sha256(await fs.readFile(finalMarkdown(state))) !== state.renderedSourceSha256) {
+ await event(state, 'working_copy_changed', { reason: 'working copy edited after QA; rerendering before draft' })
+ await render(state)
+ if (state.phase === 'blocked') return state
+ await fullQa(state)
+ return state
+ }
+ if (state.phase === 'awaiting_human_fact_resolution' || state.phase === 'blocked' || state.phase === 'awaiting_draft_approval' || state.phase === 'completed') return state
   if (state.phase === 'research_and_write' || state.phase === 'revise') await visualDesign(state)
   if (state.phase === 'blocked') return state
   if (state.phase === 'visual_design') await render(state)
@@ -237,14 +255,18 @@ async function draftPreflight(article: string, cover: string) {
 
 async function rasterizeSvg(source: string, target: string) {
   const chrome = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
-  await fs.mkdir(path.dirname(target), { recursive: true })
-  await exec(chrome, ['--headless', '--disable-gpu', '--hide-scrollbars', '--window-size=1600,900', `--screenshot=${target}`, pathToFileURL(source).href], { cwd: root, maxBuffer: 1024 * 1024 })
+ const svg = await fs.readFile(source, 'utf8')
+ const width = Number(svg.match(/\bwidth="(\d+(?:\.\d+)?)"/)?.[1] ?? 1600)
+ const height = Number(svg.match(/\bheight="(\d+(?:\.\d+)?)"/)?.[1] ?? 900)
+ const size = `${Number.isFinite(width) ? Math.round(width) : 1600},${Number.isFinite(height) ? Math.round(height) : 900}`
+ await fs.mkdir(path.dirname(target), { recursive: true })
+ await exec(chrome, ['--headless', '--disable-gpu', '--hide-scrollbars', `--window-size=${size}`, `--screenshot=${target}`, pathToFileURL(source).href], { cwd: root, maxBuffer: 1024 * 1024 })
   await fs.access(target)
 }
 
 function uploadedUrl(result: Record<string, unknown>) {
   const data = result.data as Record<string, unknown> | undefined
-  const url = data?.url ?? data?.image_url ?? data?.media_url
+  const url = data?.url ?? data?.image_url ?? data?.media_url ?? data?.wechat_url
   if (typeof url !== 'string' || !/^https?:\/\//.test(url)) throw new Error('Image upload returned no usable remote URL for the article body.')
   return url
 }
@@ -292,7 +314,7 @@ async function createDraft(state: RunState) {
   if (process.env.WECHAT_AGENT_MOCK === '1') mediaId = 'mock-draft-media-id'
   else { const requestPath = path.join(runDir(state.id), 'publish', 'create-draft.json'); await fs.writeFile(requestPath, JSON.stringify({ articles: [{ ...payload, thumb_media_id: thumbMediaId }] }, null, 2)); const created = await command('md2wechat', ['create_draft', requestPath, '--json']); mediaId = (created.data as Record<string, unknown> | undefined)?.media_id as string | undefined }
   if (!mediaId) throw new Error('Draft creation returned no media_id.')
- state.draft = { mediaId, urlStatus: 'pending_editor_url', mode: 'create' }; state.phase = 'post_draft_qa'; await event(state, 'draft_created', { mediaId }); await postDraftQa(state); return state
+ state.draft = { mediaId, urlStatus: 'pending_editor_url', mode: 'create' }; state.phase = 'post_draft_qa'; await save(state); await event(state, 'draft_created', { mediaId }); await postDraftQa(state); return state
 }
 
 async function wechatToken() {
@@ -300,28 +322,44 @@ async function wechatToken() {
   const response = await fetch(`https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${encodeURIComponent(appid)}&secret=${encodeURIComponent(secret)}`); const payload = await response.json() as { access_token?: string; errmsg?: string }; if (!payload.access_token) throw new Error(`WeChat token request failed: ${payload.errmsg ?? 'unknown error'}`); return payload.access_token
 }
 async function getDraft(mediaId: string) { const token = await wechatToken(); const response = await fetch(`https://api.weixin.qq.com/cgi-bin/draft/get?access_token=${encodeURIComponent(token)}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ media_id: mediaId }) }); const payload = await response.json() as Record<string, unknown>; if (payload.errcode) throw new Error(`WeChat draft/get failed: ${payload.errmsg ?? payload.errcode}`); return payload }
+export function draftNewsItem(readback: Record<string, unknown>): Record<string, unknown> {
+ const pool: unknown[] = []
+ const collect = (value: unknown) => { if (Array.isArray(value)) pool.push(...value); else if (value && typeof value === 'object') pool.push(value) }
+ collect(readback.news_item)
+ const entries = Array.isArray(readback.item) ? readback.item : readback.item ? [readback.item] : []
+ for (const entry of entries) {
+  if (!entry || typeof entry !== 'object') continue
+  const record = entry as Record<string, unknown>
+  collect(record.news_item)
+  collect((record.content as Record<string, unknown> | undefined)?.news_item)
+  pool.push(record)
+ }
+ const isNews = (value: unknown) => Boolean(value) && typeof value === 'object' && typeof (value as Record<string, unknown>).content === 'string'
+ return (pool.find(isNews) as Record<string, unknown> | undefined) ?? (pool[0] as Record<string, unknown> | undefined) ?? {}
+}
+
 async function postDraftQa(state: RunState) {
-  const mediaId = state.draft?.mediaId
-  if (!mediaId) throw new Error('No draft media_id to read back.')
-  const readback: Record<string, unknown> = process.env.WECHAT_AGENT_MOCK === '1'
-    ? { item: [{ content: { news_item: [{ title: state.title, content: '<h2>验证</h2><section>文章目录</section>' }] } }] }
-    : await getDraft(mediaId)
-  const item = Array.isArray(readback.item) ? readback.item[0] as Record<string, unknown> : undefined
-  const contentBlock = item?.content as Record<string, unknown> | undefined
-  const news = Array.isArray(contentBlock?.news_item) ? contentBlock.news_item[0] as Record<string, unknown> : undefined
-  const content = typeof news?.content === 'string' ? news.content : ''
-  const checks = { title: news?.title === state.title, toc: content.includes('文章目录'), firstH2: /class="h2"|<h2/i.test(content), noLocalAsset: !/(?:file:|\.\.\/assets\/)/i.test(content) }
-  if (!Object.values(checks).every(Boolean)) throw new Error(`Draft readback verification failed: ${Object.entries(checks).filter(([, passed]) => !passed).map(([name]) => name).join(', ')}`)
-  await writeJson(state, 'readback', 'publish/readback.json', { checks, response: readback })
-  state.phase = 'completed'
-  await event(state, 'draft_readback_completed', { mediaId, checks, urlStatus: state.draft?.urlStatus })
-  await save(state)
+ const mediaId = state.draft?.mediaId
+ if (!mediaId) throw new Error('No draft media_id to verify.')
+ const payload = await readJson<{ title?: string }>(state, 'publishDraftPayload', 'publish/draft-payload.json')
+ const expectedTitle = payload.title ?? state.title
+ const readback: Record<string, unknown> = process.env.WECHAT_AGENT_MOCK === '1'
+  ? { news_item: [{ title: expectedTitle, content: '<h2>验证</h2><section>文章目录</section>' }] }
+  : await getDraft(mediaId)
+ const news = draftNewsItem(readback)
+ const content = typeof news.content === 'string' ? news.content : ''
+ const checks = { title: news.title === expectedTitle, toc: content.includes('文章目录'), firstH2: /class="h2"|<h2/i.test(content), noLocalAsset: !/(?:file:|\.\.\/assets\/)/i.test(content) }
+ await writeJson(state, 'readback', 'publish/readback.json', { checks, expectedTitle, mediaId, response: readback })
+ if (!Object.values(checks).every(Boolean)) throw new Error(`Draft readback verification failed: ${Object.entries(checks).filter(([, passed]) => !passed).map(([name]) => name).join(', ')}`)
+ state.phase = 'completed'
+ await event(state, 'draft_readback_completed', { mediaId, checks, urlStatus: state.draft?.urlStatus })
+ await save(state)
 }
 
 async function updateDraft(state: RunState, mediaId: string) {
   await beforeDraft(state); state.phase = 'draft_update'; await save(state); const payload = await publishWorkingCopy(state); const thumbMediaId = await uploadCover(state)
   if (process.env.WECHAT_AGENT_MOCK !== '1') { const accessToken = await wechatToken(); const response = await fetch(`https://api.weixin.qq.com/cgi-bin/draft/update?access_token=${encodeURIComponent(accessToken)}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ media_id: mediaId, index: 0, articles: { title: payload.title, author: '', digest: payload.digest, content: payload.content, content_source_url: '', thumb_media_id: thumbMediaId, show_cover_pic: 0, need_open_comment: 0, only_fans_can_comment: 0 } }) }); const responsePayload = await response.json() as Record<string, unknown>; if (responsePayload.errcode) throw new Error(`WeChat draft/update failed: ${responsePayload.errmsg ?? responsePayload.errcode}`) }
- state.draft = { mediaId, urlStatus: 'pending_editor_url', mode: 'update' }; state.phase = 'post_draft_qa'; await event(state, 'draft_updated', { mediaId }); await postDraftQa(state); return state
+ state.draft = { mediaId, urlStatus: 'pending_editor_url', mode: 'update' }; state.phase = 'post_draft_qa'; await save(state); await event(state, 'draft_updated', { mediaId }); await postDraftQa(state); return state
 }
 
 async function main() {
@@ -334,7 +372,8 @@ async function main() {
   if (action === 'resume') { await advance(state); console.log(JSON.stringify(summary(await load(id)), null, 2)); return }
   if (action === 'preview') { const html = artifact(state, 'html', 'render/article.html'); await fs.access(html); console.log(JSON.stringify({ runId: id, html: rel(html), url: pathToFileURL(html).href }, null, 2)); return }
   if (action === 'resolve-facts') { const decision = valueAfter(args, '--decision') as FactConflict['decision']; if (!['research_wins', 'retain_with_qualification', 'drop_claim'].includes(decision)) throw new Error('resolve-facts requires a valid --decision.'); await resolveFacts(state, valueAfter(args, '--conflict') ?? '', decision, valueAfter(args, '--note')); console.log(JSON.stringify(summary(await load(id)), null, 2)); return }
-  if (action === 'approve-draft') { await createDraft(state); console.log(JSON.stringify(summary(await load(id)), null, 2)); return }
+  if (action === 'verify-draft') { await postDraftQa(state); console.log(JSON.stringify(summary(await load(id)), null, 2)); return }
+ if (action === 'approve-draft') { await createDraft(state); console.log(JSON.stringify(summary(await load(id)), null, 2)); return }
   if (action === 'update-draft') { const mediaId = valueAfter(args, '--media-id'); if (!mediaId) throw new Error('update-draft requires --media-id.'); await updateDraft(state, mediaId); console.log(JSON.stringify(summary(await load(id)), null, 2)); return }
   if (action === 'export') { const output = valueAfter(args, '--output'); if (!output) throw new Error('export requires --output.'); const target = safeVaultPath(output, 'Export target'); await fs.mkdir(path.dirname(target), { recursive: true }); await fs.copyFile(finalMarkdown(state), target); await event(state, 'article_exported', { output: rel(target) }); await save(state); console.log(JSON.stringify({ runId: id, output: rel(target) }, null, 2)); return }
   throw new Error(usage)

@@ -61,4 +61,12 @@ pnpm --dir scripts/wechat wechat-agent approve-draft <runId>
 
 使用 `status` / `report` 查看状态，使用 `resume` 继续同一个 Agent run。审批保护由 CLI 内部消费，使用者无需取得或输入 token。草稿接口没有返回 URL 时，以真实 `media_id` 交付；Harness 不会伪造草稿链接。
 
-完整状态、权限和质量门禁见 [`PROTOCOL.md`](./PROTOCOL.md)。群发不属于这条流水线，脚本没有调用对应接口。
+完整状态、权限和质量门禁见 [`PROTOCOL.md`](./PROTOCOL.md)。
+
+草稿创建后若回读校验中断，用 `pnpm --dir scripts/wechat wechat-agent verify-draft <runId>` 重跑回读校验。群发不属于这条流水线，脚本没有调用对应接口。
+
+## 模型与网络
+
+- 三个 Agent 都以严格结构化输出（json_schema）返回产物，`WECHAT_AGENT_MODEL`（默认 `gpt-5.6-terra`）必须是支持严格结构化输出的模型；不支持时首个 Agent 调用即报 `response_format` 错误。
+- 写作 Agent 需要核验公开网页事实，因此在 `workspace-write` 沙箱并开启网络下运行；该模式不挂载 Vault，正文、运行状态与资产仍只写入本工程 `.runtime/runs/<run-id>/`。
+- `pnpm --dir scripts/wechat test` 覆盖确定性 QA、事实冲突门禁、结构化输出 schema 严格性与草稿回读解析。

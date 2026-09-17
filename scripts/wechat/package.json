@@ -5,7 +5,7 @@
   "scripts": {
     "wechat-agent": "tsx wechat-agent.mts",
     "wechat-loop": "tsx wechat-agent.mts",
-    "test": "tsx test-loop.mts && tsx test-agent.mts"
+    "test": "tsx test-loop.mts && tsx test-agent.mts && tsx test-schema.mts && tsx test-readback.mts"
   },
   "dependencies": {
     "@openai/codex-sdk": "0.153.4",

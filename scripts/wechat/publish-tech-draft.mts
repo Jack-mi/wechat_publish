@@ -26,7 +26,9 @@ const draftOutput = valueAfter('--draft-json') && path.resolve(valueAfter('--dra
 const sourcePath = path.resolve(source)
 const raw = await fs.readFile(sourcePath, 'utf8')
 const frontMatter = raw.match(/^---\n([\s\S]*?)\n---\n?/)
-const title = (frontMatter?.[1].match(/^title:\s*([^\n]+)$/m)?.[1] ?? path.basename(sourcePath, '.md')).trim().replace(/^['"]|['"]$/g, '')
+const bodyWithoutFrontMatter = raw.replace(/^---\n[\s\S]*?\n---\n?/, '')
+const firstHeading = bodyWithoutFrontMatter.match(/^#\s+(.+)$/m)?.[1]
+const title = (frontMatter?.[1].match(/^title:\s*([^\n]+)$/m)?.[1] ?? firstHeading ?? path.basename(sourcePath, '.md')).trim().replace(/^['"]|['"]$/g, '')
 const escapeHtml = (value: string) => value.replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]!)
 const cleanHeading = (value: string) => value
   .replace(/^\s*\d+(?:\.\d+)?[.、]?\s+/, '')
