@@ -1,0 +1,14 @@
+{
+  "name": "wechat-agent-harness",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "wechat-agent": "tsx wechat-agent.mts",
+    "wechat-loop": "tsx wechat-agent.mts",
+    "test": "tsx test-loop.mts && tsx test-agent.mts"
+  },
+  "dependencies": {
+    "@openai/codex-sdk": "0.153.4",
+    "tsx": "4.21.0"
+  }
+}

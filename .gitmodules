@@ -1,0 +1,3 @@
+[submodule "vendor/doocs-md"]
+	path = vendor/doocs-md
+	url = https://github.com/doocs/md.git

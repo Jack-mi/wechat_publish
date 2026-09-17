@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#24103f"/><stop offset="1" stop-color="#12486b"/></linearGradient><filter id="g"><feGaussianBlur stdDeviation="12"/></filter></defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <g opacity=".22" fill="#ffbe7b" filter="url(#g)"><circle cx="800" cy="350" r="230"/></g>
+  <g fill="none" stroke="#91dcff" stroke-width="7"><path d="M300 305L570 205 790 340 570 510 300 405Z"/><path d="M810 340C1030 195 1260 250 1335 420 1400 570 1210 655 1030 545"/></g>
+  <g fill="#152f55" stroke="#b0e7ff" stroke-width="5"><circle cx="300" cy="305" r="43"/><circle cx="570" cy="205" r="43"/><circle cx="790" cy="340" r="43"/><circle cx="570" cy="510" r="43"/><circle cx="300" cy="405" r="43"/></g>
+  <g fill="#93dcff"><circle cx="300" cy="305" r="14"/><circle cx="570" cy="205" r="14"/><circle cx="790" cy="340" r="14"/><circle cx="570" cy="510" r="14"/><circle cx="300" cy="405" r="14"/></g>
+  <g fill="#42204f" stroke="#ffc27e" stroke-width="5"><rect x="1030" y="260" width="290" height="280" rx="35"/></g>
+  <g fill="none" stroke="#ffd0a0" stroke-width="9"><path d="M1085 340h180M1085 400h120M1085 460h160"/><path d="M1175 205v-55m0 445v55"/></g>
+  <text x="120" y="145" fill="#b9e7ff" font-family="Arial, PingFang SC, sans-serif" font-size="28" font-weight="700" letter-spacing="8">AGENT ARCHITECTURE</text>
+  <text x="120" y="780" fill="#fff" font-family="Arial, PingFang SC, sans-serif" font-size="60" font-weight="700">LangGraph × Claude SDK</text>
+  <text x="120" y="840" fill="#d7eaff" font-family="Arial, PingFang SC, sans-serif" font-size="34">两种 Agent 工程范式</text>
+</svg>

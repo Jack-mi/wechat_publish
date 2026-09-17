@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#10243b"/><stop offset="1" stop-color="#0a766f"/></linearGradient><filter id="g"><feGaussianBlur stdDeviation="15"/></filter></defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <g opacity=".18" fill="#a6fff2" filter="url(#g)"><circle cx="1140" cy="260" r="170"/><circle cx="1370" cy="580" r="120"/><circle cx="760" cy="430" r="100"/></g>
+  <g fill="none" stroke="#9ef7e9" stroke-width="5"><path d="M570 230C870 115 1080 220 1210 395C1340 570 1240 710 1020 680"/><path d="M630 455C810 600 1020 610 1190 520"/></g>
+  <g fill="#123d51" stroke="#abfff2" stroke-width="4"><rect x="770" y="180" width="250" height="150" rx="22"/><rect x="1080" y="405" width="250" height="150" rx="22"/><rect x="780" y="595" width="250" height="150" rx="22"/></g>
+  <g fill="#9ef7e9"><circle cx="814" cy="230" r="13"/><circle cx="1124" cy="455" r="13"/><circle cx="824" cy="645" r="13"/></g>
+  <g stroke="#8edbce" stroke-width="8"><path d="M850 270h120M850 492h120M850 682h120"/></g>
+  <g transform="translate(160 230)" fill="none" stroke="#d4fff8" stroke-width="8"><circle cx="190" cy="190" r="150"/><path d="M90 180c50-100 150-110 205-15M125 270c65 55 150 40 200-25"/><circle cx="145" cy="160" r="9" fill="#d4fff8"/><circle cx="235" cy="160" r="9" fill="#d4fff8"/></g>
+  <text x="120" y="145" fill="#a8fff0" font-family="Arial, PingFang SC, sans-serif" font-size="28" font-weight="700" letter-spacing="8">AGENT RUNTIME</text>
+  <text x="120" y="780" fill="#fff" font-family="Arial, PingFang SC, sans-serif" font-size="66" font-weight="700">DeepTutor</text>
+  <text x="120" y="840" fill="#c2f5ec" font-family="Arial, PingFang SC, sans-serif" font-size="34">把个性化学习做成 Agent Runtime</text>
+</svg>
