@@ -24,7 +24,7 @@ function walk(node: unknown, path: string) {
   if (obj.items) walk(obj.items, `${path}[]`)
 }
 
-for (const name of ['orchestrator', 'writer', 'visual', 'qa']) {
+for (const name of ['orchestrator', 'outline', 'writer', 'structureEditor', 'styleEditor', 'visual', 'visionProbe', 'qa']) {
   assert.ok((schemas as Record<string, unknown>)[name], `missing agent schema: ${name}`)
 }
 for (const [name, schema] of Object.entries(schemas)) walk(schema, name)

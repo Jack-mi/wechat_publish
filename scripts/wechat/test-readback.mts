@@ -4,7 +4,7 @@ import { draftNewsItem } from './wechat-agent.mts'
 // 微信 draft/get 实际把 news_item 放在顶层；旧代码只认 item[0].content.news_item，
 // 导致回读校验把真实草稿误判为失败。这里锁定两种形态都能解析。
 const actual = {
-  news_item: [{ title: '标题A', content: '<section class="wx-article"><h2 class="h2">1. 小节</h2>文章目录</section>' }],
+  news_item: [{ title: '标题A', content: '<section class="wx-article"><p>标题A 是一项用于验证回读的技术实践。</p><h2 class="h2">1. 小节</h2></section>' }],
   create_time: 1,
   update_time: 2,
 }

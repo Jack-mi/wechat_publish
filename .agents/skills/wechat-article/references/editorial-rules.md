@@ -1,8 +1,22 @@
 # Editorial rules
 
 - Explain the project and concepts before relying on Agent or harness vocabulary.
+- Start from a valuable question the target reader actually faces, not a tool introduction or repository audit. Progress through the reader's next questions: why it matters, what happened, why, where the limits are, and what to try. Write to discuss a judgment with peers rather than deliver a compliance report.
+- Never publish analysis-version framing anywhere in the title, directory, body, figure labels, captions or reference labels. No “基于某版本”, “当前版本”, repository snapshots, commits, SHA strings, package-version declarations or chapter comparing old/new versions. Keep precise research revisions only in the private evidence ledger and source URLs. Preserve attribution and uncertainty through the concrete experiment or reported behavior; do not turn an old finding into an unqualified current product claim.
+- Illustrations must explain distinct points where those points appear. For substantive technical articles, plan multiple useful figures (typically 2–4), such as evidence charts, worked comparisons and mechanism diagrams. Do not force a single generic vertical chain at the end. Prefer restrained editorial graphics, legible labels, generous whitespace and honest units; charts must distinguish measured results from teaching examples.
+- Lead with the reader's concrete task, sequence, or consequence. Do not open a section with internal filenames, abstract constraint taxonomies, or repository bookkeeping; introduce the business module first and put implementation paths in supporting evidence only.
 - Preserve the source article as an immutable input; write all revisions in the run directory.
 - For external research, map each key factual claim to a URL, retrieval time, and supporting excerpt.
-- Start articles with useful prose. The renderer, not the writer, inserts the “文章目录” block.
+- Rendered articles start directly with one plain-language paragraph that introduces the project and leads into the topic, never a table of contents, title card, duplicate article title banner or English kicker. Right after the H1 title and before the first chapter, writers must add this natural opening in prose, grounded in evidence. Do not label it “项目引子” or “项目因子”, and do not use a blockquote, list, or field inventory. Do not add any article directory anywhere.
+- Chapter one opens with a short project-background paragraph (what the project is, who builds it, why it exists, why it is being discussed now) before the reader's problem, so the article never starts cold on mechanism.
+- Do not end the opening section with a source inventory or a stack of research disclaimers such as “下文依据……”“本文没有……”. Introduce the actual case naturally; keep essential attribution and limitations beside the result they qualify, with detailed sources at the end.
 - Use H2 and H3 for structure. Avoid padded numbering, “核心速览”, “解读版本”, and “季度版本”.
+- Review the outline before drafting. Default to 4–6 H2 chapters; each chapter must answer one concrete reader question. Keep chapter one within three prose paragraphs and merge the conclusion into the final chapter.
+- Prefer concrete actions, questions, and consequences in headings. Rewrite abstract AI-flavored wording such as “宿主”, “自动兑现”, “canonical workflow”, “统一口径”, “赋能”, “闭环”, “沉淀”, “方法论”, “范式”, “抓手”, and “底层逻辑” when ordinary Chinese is clearer.
+- Keep citation numbers out of the published body. Put traceable sources in the final reference section and remove entries that no longer support retained content.
+- Mobile defaults are 15px body text with 1.82 line height, 19px H2, and 16px H3. Avoid stacking a full paragraph gap with a large heading top margin.
 - Request a diagram only when it explains a real structure or flow. Prefer one clear visual over decorative images.
+- Reference sections use natural sequence numbers, source-name links and full visible HTTP(S) URLs. Body footnote markers and reference-list numbering are different rules.
+- Editors modify only the current work copy; evidence ledgers do not replace it. Preserve every part outside an explicit revision scope.
+- QA reports all evidenced defects together. Mandatory failures and optional aesthetic suggestions are separate. Normal technical distinctions such as triggered versus passed are not forbidden rhetoric.
+- Image display width and internal font size are separate controls. Validate actual 390px rendering, heading orphan lines, complete URLs and image text. Do not enlarge image type as a side effect of changing display width.
