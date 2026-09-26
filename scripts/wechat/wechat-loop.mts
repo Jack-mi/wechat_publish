@@ -7,6 +7,7 @@ import { promisify } from 'node:util'
 import { Codex } from '@openai/codex-sdk'
 import { template } from './tech-article-template.mjs'
 import { editorialPrompt, reviewSchema, visualPrompt } from './prompts.mts'
+import { hasAnalysisVersionFraming, htmlText, referenceSection, referencesMatchHtml } from './article-contract.mts'
 
 const run = promisify(execFile)
 const root = path.resolve(import.meta.dirname, '../..')
@@ -103,25 +104,56 @@ function fencedCodeBlockCount(markdown: string) {
   markdown = markdown.replace(/<!-- WECHAT_PUBLISH_EXCLUDE_START -->[\s\S]*?<!-- WECHAT_PUBLISH_EXCLUDE_END -->\s*/g, '')
   return (markdown.match(/^\s*```/gm) ?? []).length / 2
 }
+function openingParagraph(markdown: string) {
+  const body = bodyBeforeSources(markdown)
+    .replace(/^(?:\uFEFF)?\s*(?:---[\s\S]*?---\s*)?/, '')
+    .replace(/^#\s+[^\n]+\n+/, '')
+  return body.split(/\n\n+/).map(item => item.trim()).find(item => item && !/^(?:#{1,6}\s|>|[-*+]\s|```|\||!\[|<!--)/.test(item)) ?? ''
+}
+function plainText(markdown: string) {
+  return markdown.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/[>*_`]/g, '').replace(/\s+/g, '').trim()
+}
+function bodyBeforeSources(markdown: string) { return referenceSection(markdown).body.split(/^##\s+(?:\d+[.、]?\s*)?参考来源\s*$/m)[0] }
+function h2Sections(markdown: string) {
+  const body = bodyBeforeSources(markdown)
+  const matches = [...body.matchAll(/^##\s+(.+)$/gm)]
+  return matches.map((match, index) => ({ title: match[1], body: body.slice((match.index ?? 0) + match[0].length, matches[index + 1]?.index ?? body.length) }))
+}
+const abstractHeading = /宿主|自动兑现|canonical workflow|统一口径|赋能|闭环|沉淀|方法论|范式|抓手|底层逻辑|能做什么.{0,4}不能做什么/i
 export function deterministicQa(markdown: string, html: string, cover?: string): Qa {
   const sourceHeadings = headings(markdown)
-  const tocTitle = /<li\b[^>]*\bwx-toc-article-title\b[^>]*>([\s\S]*?)<\/li>/i.exec(html)?.[1] ?? ''
+  const sections = h2Sections(markdown)
+  const firstChapter = sections[0]?.body ?? ''
+  const opening = openingParagraph(markdown)
+  const openingText = plainText(opening)
   const checks = {
     articleHasH2: sourceHeadings.some(item => item.level === 2),
-    tocPresent: html.includes(template.toc.label),
+    openingParagraphInSource: Boolean(openingText),
+    openingParagraphFirst: Boolean(openingText) && htmlText(html).startsWith(openingText),
+    noOpeningLabel: !/(?:项目因子|项目引子)/.test(opening),
+    noTitleCard: !/\bclass="[^"]*\bwx-(?:hero|kicker)\b/.test(html),
     noStyleTag: !/<style\b/i.test(html),
     noCssVariables: !/var\(--/i.test(html),
     noCoreOverview: !/核心速览/.test(html),
     noArticleVersionMetadata: !/(?:解读|季度)\s*版本\s*[:：]/i.test(html),
+    noAnalysisVersionFraming: !hasAnalysisVersionFraming(markdown),
     noPaddedHeadingNumbers: !/(?:^|[>\s])0\d+(?:\.\d+)?[.、](?=\s|<)/m.test(html),
-    tocTitleHasNoBullet: Boolean(tocTitle) && !/wx-toc-index|•/.test(tocTitle),
-    tocNumberSpacingCompact: /gap:\s*4px/i.test(html),
+    noTocModule: !/class="[^"]*wx-toc|全文导航/.test(html),
     noUnsupportedIntraArticleAnchors: !/(?:href="#wx-section-|\bid="wx-section-|\bname="wx-section-)/i.test(html),
     fencedCodeBlocksAreStyled: fencedCodeBlockCount(markdown) === 0 || (html.match(/<pre class="hljs code__pre"[^>]*style="[^"]*background:\s*#0d1b2a/gi) ?? []).length >= fencedCodeBlockCount(markdown),
-    inlineStyles: (html.match(/\sstyle="/gi) ?? []).length > 20,
+    inlineStyles: (html.match(/\sstyle="/gi) ?? []).length > 5,
     h2Visible: (html.match(/class="h2"/g) ?? []).length >= sourceHeadings.filter(item => item.level === 2).length,
     h3Visible: (html.match(/class="h3"/g) ?? []).length >= sourceHeadings.filter(item => item.level === 3).length,
     coverPresent: Boolean(cover),
+    chapterCountCompact: sections.length >= 1 && sections.length <= 6,
+    firstChapterAtMostThreeParagraphs: firstChapter.split(/\n\n+/).map(item => item.trim()).filter(item => item && !/^(?:###|!\[|>)/.test(item)).length <= 3,
+    conclusionMerged: !sections.some(item => /^(?:\d+[.、]?\s*)?结语\s*$/.test(item.title)),
+    concreteHeadings: !sourceHeadings.some(item => abstractHeading.test(item.text)),
+    noInlineCitationMarkers: !/\[(?:[1-9]|[1-9]\d+)\]/.test(bodyBeforeSources(markdown)),
+    mobileBodyFont: /class="p"[^>]*style="[^"]*font-size:\s*15px/i.test(html),
+    mobileBodyLineHeight: /class="p"[^>]*style="[^"]*line-height:\s*1\.82/i.test(html),
+    noVisibleMarkdownEmphasis: !/>[^<]*\*\*[^<]*</.test(html),
+    numberedVisibleReferences: referencesMatchHtml(markdown, html),
   }
   const findings: Finding[] = Object.entries(checks).flatMap(([name, passed]) => passed ? [] : [{ severity: name === 'coverPresent' ? 'warning' : 'error', message: `QA check failed: ${name}`, recommendation: name === 'coverPresent' ? 'Provide a dedicated JPEG/PNG cover before approving the draft.' : 'Fix the renderer or article structure, then resume the run.' }])
   return { passed: findings.every(item => item.severity !== 'error'), checks, findings }
@@ -265,6 +297,7 @@ function summary(state: RunState) {
 }
 async function main() {
   if (!command || args.includes('--help')) throw new Error(usage)
+  if (!['status', 'report'].includes(command)) throw new Error('Legacy loop is read-only. Use the wechat-agent CLI for production actions.')
   if (command === 'start') {
     const article = args.find(arg => !arg.startsWith('-'))
     if (!article) throw new Error(usage)
